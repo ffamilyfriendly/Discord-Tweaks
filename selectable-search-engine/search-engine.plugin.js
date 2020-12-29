@@ -1,13 +1,13 @@
 /**
  * @name Selectable-Browser
- * @version 0.0.1
+ * @version 0.0.2
  * @authorLink https://familyfriendly.xyz
  * @website https://familyfriendly.xyz
- * @source https://github.com/ffamilyfriendly/Discord-Tweaks
+ * @source https://raw.githubusercontent.com/ffamilyfriendly/Discord-Tweaks/master/selectable-search-engine/search-engine.plugin.js
  */
 
 module.exports = (() => {
-	const config = {info:{name:"Selectable-Browser",authors:[{name:"Family Friendly",discord_id:"286224826170081290",github_username:"ffamilyfriendly"}],version:"0.0.1",description:"lets you select context menu search button!",github:"https://github.com/ffamilyfriendly/Discord-Tweaks",github_raw:"https://raw.githubusercontent.com/ffamilyfriendly/Discord-Tweaks/master/selectable-search-engine/search-engine.plugin.js"},changelog:[{title:"Changes",items:["Plugin exists","Multiple engines supported"]}], main:"index.js"};
+	const config = {info:{name:"Selectable-Browser",authors:[{name:"Family Friendly",discord_id:"286224826170081290",github_username:"ffamilyfriendly"}],version:"0.0.1",description:"lets you select context menu search button!",github:"https://github.com/ffamilyfriendly/Discord-Tweaks",github_raw:"https://raw.githubusercontent.com/ffamilyfriendly/Discord-Tweaks/master/selectable-search-engine/search-engine.plugin.js"},changelog:[{title:"Changes",items:["Multiple engines supported", "Settings menu"]}], main:"index.js"};
 
     return !global.ZeresPluginLibrary ? class {
         constructor() {this._config = config;}
@@ -41,9 +41,10 @@ module.exports = (() => {
 			this.css = `
 			
 			.FF-browser-div {
-				padding: 0.25em;
+				padding: 0.5em;
 				margin: 0.25em;
-				border: 1px solid black;
+				border-radius: 0.35em;
+				background-color: #212126;
 			}
 
 			.FF-browser-div button {
@@ -78,6 +79,7 @@ module.exports = (() => {
 			Patcher.after(SettingsContextMenu, "default", (component, args, retVal) => {
 
 				if(window.getSelection().toString() == "") return
+				Logger.log("context menu", { component, args, retVal })
 
 				//change default browser
 				retVal.props.children.forEach(r => {
@@ -95,22 +97,29 @@ module.exports = (() => {
 				if(!browsers) return
 				const browserKeys = Object.keys(browsers)
 				let sItems = []
+				retVal.props.children.push(DiscordContextMenu.buildMenuItem({type: "separator"}));
 				for(let i = 0; i < browserKeys.length; i++) {
 					if(!browsers[browserKeys[i]].on) continue;
-					sItems.push({
+
+					retVal.props.children.push(DiscordContextMenu.buildMenuItem({label: `Search with ${this.getServiceName(browsers[browserKeys[i]].url)}`, action: () => {return window.open(this.parseUrl(browsers[browserKeys[i]].url,window.getSelection().toString()),"_blank");}}));
+
+					/*sItems.push({
 						label: this.getServiceName(browsers[browserKeys[i]].url),
 						id: browserKeys[i],
 						subtext:browsers[browserKeys[i]].url,
 						closeOnClick: false,
 						disabled: false,
 						action: () => {return window.open(this.parseUrl(browsers[browserKeys[i]].url,window.getSelection().toString()),"_blank");}
-				   	})
+				   	})*/
 				}
 
 				if(sItems.length > 0) {
-					retVal.props.children.push(DiscordContextMenu.buildMenuItem({type: "separator"}));
-					retVal.props.children.push(DiscordContextMenu.buildMenuItem({type: "submenu", label:"Search with...", items:sItems  }));
+					//retVal.props.children.push(DiscordContextMenu.buildMenuItem({type: "separator"}));
+					//retVal.props.children.push(DiscordContextMenu.buildMenuItem({type: "submenu", label:"Search with...", items:sItems  }));
+					//Logger.log("context menu", { component, args, retVal })
 				}
+
+
 
             });
 		}
