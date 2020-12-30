@@ -1,13 +1,14 @@
 /**
- * @name Selectable-Browser
+ * @name Selectable-Search-Engine
  * @version 0.0.2
  * @authorLink https://familyfriendly.xyz
  * @website https://familyfriendly.xyz
- * @source https://raw.githubusercontent.com/ffamilyfriendly/Discord-Tweaks/master/selectable-search-engine/search-engine.plugin.js
+ * @updateUrl https://raw.githubusercontent.com/ffamilyfriendly/Discord-Tweaks/master/selectable-search-engine/search-engine.plugin.js
+ * @source https://github.com/ffamilyfriendly/Discord-Tweaks/blob/master/selectable-search-engine/search-engine.plugin.js
  */
 
 module.exports = (() => {
-	const config = {info:{name:"Selectable-Browser",authors:[{name:"Family Friendly",discord_id:"286224826170081290",github_username:"ffamilyfriendly"}],version:"0.0.1",description:"lets you select context menu search button!",github:"https://github.com/ffamilyfriendly/Discord-Tweaks",github_raw:"https://raw.githubusercontent.com/ffamilyfriendly/Discord-Tweaks/master/selectable-search-engine/search-engine.plugin.js"},changelog:[{title:"Changes",items:["Multiple engines supported", "Settings menu"]}], main:"index.js"};
+	const config = {info:{name:"Selectable-Search-Engine",authors:[{name:"Family Friendly",discord_id:"286224826170081290",github_username:"ffamilyfriendly"}],version:"0.0.1",description:"Lets you select and add search engines for the context menu!",github:"https://github.com/ffamilyfriendly/Discord-Tweaks",github_raw:"https://raw.githubusercontent.com/ffamilyfriendly/Discord-Tweaks/master/selectable-search-engine/search-engine.plugin.js"},changelog:[{title:"Changes",items:["Multiple engines supported", "Settings menu"]}]};
 
     return !global.ZeresPluginLibrary ? class {
         constructor() {this._config = config;}
@@ -81,46 +82,26 @@ module.exports = (() => {
 				if(window.getSelection().toString() == "") return
 				Logger.log("context menu", { component, args, retVal })
 
-				//change default browser
 				retVal.props.children.forEach(r => {
 					if(r.props.children && r.props.children[0] && r.props.children[0].props.id == "search-google") {
+
+						//Change the defualt browser
 						const defaultSE = this.getSetting("search_url")
 						r.props.children[0].props.label = `Search with ${this.getServiceName(defaultSE)}`
 						r.props.children[0].props.action = () => {
 							return window.open(this.parseUrl(defaultSE,window.getSelection().toString()),"_blank")
 						}
+
+						//Add other browsers
+						const browsers = this.getSetting("other_browsers")
+						if(!browsers) return
+						const browserKeys = Object.keys(browsers)
+						for(let i = 0; i < browserKeys.length; i++) {
+							if(!browsers[browserKeys[i]].on) continue;
+							r.props.children.push(DiscordContextMenu.buildMenuItem({label: `Search with ${this.getServiceName(browsers[browserKeys[i]].url)}`, action: () => {return window.open(this.parseUrl(browsers[browserKeys[i]].url,window.getSelection().toString()),"_blank");}}))
+						}
 					}
 				})
-
-				//add misc browsers
-				const browsers = this.getSetting("other_browsers")
-				if(!browsers) return
-				const browserKeys = Object.keys(browsers)
-				let sItems = []
-				retVal.props.children.push(DiscordContextMenu.buildMenuItem({type: "separator"}));
-				for(let i = 0; i < browserKeys.length; i++) {
-					if(!browsers[browserKeys[i]].on) continue;
-
-					retVal.props.children.push(DiscordContextMenu.buildMenuItem({label: `Search with ${this.getServiceName(browsers[browserKeys[i]].url)}`, action: () => {return window.open(this.parseUrl(browsers[browserKeys[i]].url,window.getSelection().toString()),"_blank");}}));
-
-					/*sItems.push({
-						label: this.getServiceName(browsers[browserKeys[i]].url),
-						id: browserKeys[i],
-						subtext:browsers[browserKeys[i]].url,
-						closeOnClick: false,
-						disabled: false,
-						action: () => {return window.open(this.parseUrl(browsers[browserKeys[i]].url,window.getSelection().toString()),"_blank");}
-				   	})*/
-				}
-
-				if(sItems.length > 0) {
-					//retVal.props.children.push(DiscordContextMenu.buildMenuItem({type: "separator"}));
-					//retVal.props.children.push(DiscordContextMenu.buildMenuItem({type: "submenu", label:"Search with...", items:sItems  }));
-					//Logger.log("context menu", { component, args, retVal })
-				}
-
-
-
             });
 		}
 
@@ -144,8 +125,8 @@ module.exports = (() => {
 			let toggle = value.on
 			let url = value.url
 
-			let bToggle = new Settings.Switch("Browser Toggle", "wheter or not the browser should appear in context menu",value.on,(t) => { toggle = t })
-			let bUrl = new Settings.Textbox("Browser Url", "replace the query part (where the search text will go) with \"%s\"",value.url,(t) => { url = t })
+			let bToggle = new Settings.Switch("Engine Toggle", "wheter or not the engine should appear in context menu",value.on,(t) => { toggle = t })
+			let bUrl = new Settings.Textbox("Engine Url", "replace the query part (where the search text will go) with \"%s\"",value.url,(t) => { url = t })
 
 			let container = document.createElement("div")
 
@@ -158,7 +139,7 @@ module.exports = (() => {
 				optionsB[key].on = toggle
 
 				this.setSetting("other_browsers", optionsB)
-				Toasts.success("Saved Browser!")
+				Toasts.success("Saved Engine!")
 			}
 
 			const deleteBrowser = () => {
@@ -168,7 +149,7 @@ module.exports = (() => {
 				delete optionsB[key]
 				this.setSetting("other_browsers", optionsB)
 				container.remove()
-				Toasts.success("Removed Browser!")
+				Toasts.success("Removed Engine!")
 			}
 
 			let saveButton = document.createElement("button")
@@ -203,13 +184,13 @@ module.exports = (() => {
 				}, 1000)
 			}
 
-			let defaultTextBox = new Settings.Textbox("Default Browser Url","replace the query part (where the search text will go) with \"%s\"",this.getSetting("search_url"),tBoxOnChange)
+			let defaultTextBox = new Settings.Textbox("Default Engine Url","replace the query part (where the search text will go) with \"%s\"",this.getSetting("search_url"),tBoxOnChange)
 			s.appendChild(defaultTextBox.getElement())
 
-			let customEngines = new Settings.SettingGroup("Extra Browsers", { shown:true, collapsible:true })
+			let customEngines = new Settings.SettingGroup("Extra Engines", { shown:true, collapsible:true })
 			
 			let addButton = document.createElement("button")
-			addButton.innerText = "Add a Browser"
+			addButton.innerText = "Add an Engine"
 			addButton.classList = "button-38aScr da-button lookFilled-1Gx00P colorBrand-3pXr91 sizeSmall-2cSMqn grow-q77ONN da-grow"
 			
 			addButton.onclick = () => {
